@@ -31,23 +31,23 @@ setInterval( async ()=>{
 
         const jaSalvo = await redis.get(`${chave}:salvo`)
 
-        console.log('1- ANTES DA VERIFICACAO',jaSalvo)
+        
 
         
 
         if (Date.now() - ultimahora > inatividade && !jaSalvo){
 
-        console.log('2- PASSOU DA VERIFICACAO !jaSalvo',jaSalvo)
+        
 
         const conversaJSON = JSON.stringify(message)
         
-        console.log('3 - INSERT NO BANCO')
-        // await db.query(
-        //     `INSERT INTO ${tbnome} (chatid,conversa) VALUES (?,?)`, [chave, conversaJSON]
-        // )
+       
+        await db.query(
+            `INSERT INTO ${tbnome} (chatid,conversa) VALUES (?,?)`, [chave, conversaJSON]
+        )
 
         await redis.set(`${chave}:salvo`, 'ok')
-        console.log('4- FINAL',jaSalvo)
+        
     
     }
 
@@ -131,11 +131,16 @@ app.post('/chat', async (req, res) => {
         hora: Date.now()
          }))
 
+        await redis.expire(`chat:${id}`, 60* 30)
+        await redis.expire(`chat:${id}`, 60* 30)
         await redis.del(`chat:${id}:salvo`)
         await redis.ltrim(`chat:${id}`, -50,-1)
 
         const botmensagem = resposta.data.choices[0].message.content
         await redis.rpush(`chat:${id}`, JSON.stringify({role: "assistant" ,content: botmensagem, hora: Date.now() }))
+
+        await redis.expire(`chat:${id}`, 60* 30)
+        await redis.expire(`chat:${id}:salvo`, 60* 30)
          await redis.ltrim(`chat:${id}`, -50,-1)
         
 
@@ -181,7 +186,7 @@ app.post('/cadastrar', (req, res) => {
     db.query(comando, [nome, contato, tipo, descricao], (erro, resultado) => {
 
         if (erro) {
-            console.log(erro)
+            
             return res.status(500).send(erro)
         }
 
