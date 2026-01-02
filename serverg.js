@@ -13,34 +13,47 @@ const redis = new Redis(process.env.RURL) //localhost:6379
 const inatividade = 60000
 const intervalo = 30000
 
-// setInterval( async ()=>{
+setInterval( async ()=>{
 
-//     try{
-//     const chats = await redis.keys('chat:*')
+    try{
+    const chats = await redis.keys('chat:*')
 
-//     for (const chave of chats) {
-//         const data = await redis.lrange(chave, 0,-1)
-//         if (!data || data.length === 0) continue
+    for (const chave of chats) {
+        const data = await redis.lrange(chave, 0,-1)
+        if (!data || data.length === 0) continue
 
-//         const message = data.map(x=> JSON.parse(x))
-//         const ultimahora = message[message.length -1]?.hora || Date.now()
+        const message = data.map(x=> JSON.parse(x))
+        const ultimahora = message[message.length -1]?.hora || Date.now()
 
-//         if (Date.now() - ultimahora > inatividade){
 
-//         const conversaJSON = JSON.stringify(message)
 
-//         await db.query(
-//             `INSERT INTO ${tbnome} (chatid,conversa) VALUES (?,?)`, [chave, conversaJSON]
-//         )}
+        const jaSalvo = await redis.get(`chat:${chave}:salvo`)
 
         
-//     }
-//     } catch(err){
-//         console.error("erro no timer de inatividade", err)
 
-//     }
-// }
-//     , intervalo)
+        if (Date.now() - ultimahora > inatividade && !jaSalvo){
+
+        const conversaJSON = JSON.stringify(message)
+        
+        
+        await db.query(
+            `INSERT INTO ${tbnome} (chatid,conversa) VALUES (?,?)`, [chave, conversaJSON]
+        )
+
+        await redis.set(`chat:${chave}:salvo`, 'ok')
+    
+    }
+
+        
+
+        
+    }
+    } catch(err){
+        console.error("erro no timer de inatividade", err)
+
+    }
+}
+    , intervalo)
 
 // EXEMPLO DE OBJETO
 // {
@@ -109,6 +122,8 @@ app.post('/chat', async (req, res) => {
         await redis.rpush(`chat:${id}`, JSON.stringify({role: "user" ,content: mensagem,
         hora: Date.now()
          }))
+
+        await redis.del(`chat:${id}:salvo`)
         await redis.ltrim(`chat:${id}`, -50,-1)
 
         const botmensagem = resposta.data.choices[0].message.content
