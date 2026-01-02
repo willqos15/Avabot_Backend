@@ -23,7 +23,7 @@ app.use(cors({
 }))
 
 
-const redis = new Redis() //localhost:6379
+const redis = new Redis(process.env.RURL) //localhost:6379
 
 app.post('/chat', async (req, res) => {
     const { mensagem, id } = req.body
