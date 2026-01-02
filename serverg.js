@@ -13,47 +13,47 @@ const redis = new Redis(process.env.RURL) //localhost:6379
 const inatividade = 60000
 const intervalo = 30000
 
-setInterval( async ()=>{
+// setInterval( async ()=>{
 
-    try{
-    const chats = await redis.keys('chat:*')
+//     try{
+//     const chats = await redis.keys('chat:*')
 
-    for (const chave of chats) {
-        const data = await redis.lrange(chave, 0,-1)
-        if (!data || data.length === 0) continue
+//     for (const chave of chats) {
+//         const data = await redis.lrange(chave, 0,-1)
+//         if (!data || data.length === 0) continue
 
-        const message = data.map(x=> JSON.parse(x))
-        const ultimahora = message[message.length -1]?.hora || Date.now()
+//         const message = data.map(x=> JSON.parse(x))
+//         const ultimahora = message[message.length -1]?.hora || Date.now()
 
 
 
-        const jaSalvo = await redis.get(`chat:${chave}:salvo`)
+//         const jaSalvo = await redis.get(`chat:${chave}:salvo`)
 
         
 
-        if (Date.now() - ultimahora > inatividade && !jaSalvo){
+//         if (Date.now() - ultimahora > inatividade && !jaSalvo){
 
-        const conversaJSON = JSON.stringify(message)
+//         const conversaJSON = JSON.stringify(message)
         
         
-        await db.query(
-            `INSERT INTO ${tbnome} (chatid,conversa) VALUES (?,?)`, [chave, conversaJSON]
-        )
+//         await db.query(
+//             `INSERT INTO ${tbnome} (chatid,conversa) VALUES (?,?)`, [chave, conversaJSON]
+//         )
 
-        await redis.set(`chat:${chave}:salvo`, 'ok')
+//         await redis.set(`chat:${chave}:salvo`, 'ok')
     
-    }
+//     }
 
         
 
         
-    }
-    } catch(err){
-        console.error("erro no timer de inatividade", err)
+//     }
+//     } catch(err){
+//         console.error("erro no timer de inatividade", err)
 
-    }
-}
-    , intervalo)
+//     }
+// }
+//     , intervalo)
 
 // EXEMPLO DE OBJETO
 // {
