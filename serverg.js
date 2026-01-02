@@ -7,8 +7,40 @@ app.use(express.json())
 const db = require('./db')
 const PORT = process.env.PORT || 3000
 const axios = require('axios')
-
 const tbnome = 'registros'
+
+const redis = new Redis(process.env.RURL) //localhost:6379
+const inatividade = 60000
+const intervalo = 30000
+
+setInterval( async ()=>{
+
+    try{
+    const chats = await redis.keys('chat:*')
+
+    for (const chave of chats) {
+        const data = await redis.lrange(chave, 0,-1)
+        if (!data || data.length === 0) continue
+
+        const message = data.map(x=> JSON.parse(x))
+        const ultimahora = message[message.length -1]?.hora || Date.now()
+
+        if (Date.now() - ultimahora > inatividade){
+
+        const conversaJSON = JSON.stringify(message)
+
+        await db.query(
+            `INSERT INTO ${tbnome} (chatid,conversa) VALUES (?,?)`, [chave, conversaJSON]
+        )}
+
+        
+    }
+    } catch(err){
+        console.error("erro no timer de inatividade", err)
+
+    }
+}
+    , intervalo)
 
 // EXEMPLO DE OBJETO
 // {
@@ -23,7 +55,7 @@ app.use(cors({
 }))
 
 
-const redis = new Redis(process.env.RURL) //localhost:6379
+
 
 app.post('/chat', async (req, res) => {
     const { mensagem, id } = req.body
@@ -34,7 +66,7 @@ app.post('/chat', async (req, res) => {
 
     try {
         //lrange(chave, inicio, fim) o -1 significa ultimo item da lista
-        const leitura = await redis.lrange(`chat: ${id}`, -10, -1)
+        const leitura = await redis.lrange(`chat:${id}`, -10, -1)
         const mapleitura = leitura.map(x=> JSON.parse(x))
         
         const history = mapleitura.filter(x=> x.role && x.content).map(x=> ({
@@ -74,10 +106,14 @@ app.post('/chat', async (req, res) => {
 
         )
         //salva no historico
-        await redis.rpush(`chat: ${id}`, JSON.stringify({role: "user" ,content: mensagem }))
+        await redis.rpush(`chat:${id}`, JSON.stringify({role: "user" ,content: mensagem,
+        hora: Date.now()
+         }))
+        await redis.ltrim(`chat:${id}`, -50,-1)
 
         const botmensagem = resposta.data.choices[0].message.content
-        await redis.rpush(`chat: ${id}`, JSON.stringify({role: "assistant" ,content: botmensagem }))
+        await redis.rpush(`chat:${id}`, JSON.stringify({role: "assistant" ,content: botmensagem, hora: Date.now() }))
+         await redis.ltrim(`chat:${id}`, -50,-1)
         
 
         return res.json({resposta: botmensagem})
@@ -96,7 +132,7 @@ app.post('/chat', async (req, res) => {
 
 //cria tabela caso não exista
 app.get('/criatabela', (req, res) => {
-    const comando = "CREATE TABLE IF NOT EXISTS " + tbnome + " (id INT AUTO_INCREMENT PRIMARY KEY, nome VARCHAR(100), contato VARCHAR(15), tipo ENUM('reclamacao','sugestao')NOT NULL, descricao TEXT NOT NULL, criado TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
+    const comando = "CREATE TABLE IF NOT EXISTS " + tbnome + " (id INT AUTO_INCREMENT PRIMARY KEY, chatid VARCHAR(50) NOT NULL, conversa JSON NOT NULL, criado TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
 
     //query é usado para comandos SQL
     db.query(comando, (erro, resultado) => {
