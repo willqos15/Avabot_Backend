@@ -17,16 +17,20 @@ setInterval( async ()=>{
 
     try{
     const chats = await redis.keys('chat:*')
+    .then(keys=> keys.filter(x=> !x.endsWith(':salvo')))
+
     for (const chave of chats) {
         const data = await redis.lrange(chave, 0,-1)
         if (!data || data.length === 0) continue
 
         const message = data.map(x=> JSON.parse(x))
-        const ultimahora = message[message.length -1]?.hora || Date.now()
+        const ultimahora = message[message.length -1]?.hora
+        if(!ultimahora) continue
 
 
 
-        const jaSalvo = await redis.get(`chat:${chave}:salvo`)
+        const jaSalvo = await redis.get(`${chave}:salvo`)
+
         console.log('1- ANTES DA VERIFICACAO',jaSalvo)
 
         
@@ -42,7 +46,7 @@ setInterval( async ()=>{
         //     `INSERT INTO ${tbnome} (chatid,conversa) VALUES (?,?)`, [chave, conversaJSON]
         // )
 
-        await redis.set(`chat:${chave}:salvo`, 'ok')
+        await redis.set(`${chave}:salvo`, 'ok')
         console.log('4- FINAL',jaSalvo)
     
     }
