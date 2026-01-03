@@ -56,9 +56,9 @@ app.post('/cadastrar', (req, res) => {
 })
 
 
-//busca por todos campos dos itens
+//busca por todos campos dos itens 
 app.get('/busca', (req, res) => {
-    db.query('SELECT * FROM '+tbnome, (err, result) => {
+    db.query('SELECT id, conversa, criado FROM '+tbnome, (err, result) => {
         if (err) return res.status(500).json({ "erro": err })
         res.status(200).json({ "msg": result })
     })
