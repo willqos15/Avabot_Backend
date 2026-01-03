@@ -42,9 +42,9 @@ setInterval( async ()=>{
         const conversaJSON = JSON.stringify(message)
         
        
-        await db.query(
-            `INSERT INTO ${tbnome} (chatid,conversa) VALUES (?,?)`, [chave, conversaJSON]
-        )
+        // await db.query(
+        //     `INSERT INTO ${tbnome} (chatid,conversa) VALUES (?,?)`, [chave, conversaJSON]
+        // )
 
         await redis.set(`${chave}:salvo`, 'ok')
         
