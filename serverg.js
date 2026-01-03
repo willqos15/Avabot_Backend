@@ -51,6 +51,9 @@ setInterval( async ()=>{
 
         await redis.set(`${chave}:salvo`, 'ok')
         console.log('5 OK- salvo mensagem bd -------')
+
+        await redis.del(chave)
+        await redis.del(chave, `${chave}:salvo`)
         
     
     }
