@@ -143,6 +143,8 @@ app.post('/chat', async (req, res) => {
 
 
         )
+        console.log("TEXTE XP Mensagem a salvar no Redis:", { mensagem, xp });
+
         //salva no historico
         await redis.rpush(`chat:${id}`, JSON.stringify({role: "user" ,content: mensagem,
         hora: Date.now(), xp: xp
