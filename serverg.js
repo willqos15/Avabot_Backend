@@ -29,7 +29,9 @@ setInterval( async ()=>{
         const ultimahora = message[message.length -1]?.hora
         if(!ultimahora) continue
 
-       console.log('2- data.lenght ok: ',data.length, 'e ultima hora ok: ', ultimahora)
+        const xpdb = message[message.length -1]?.xp
+
+       console.log('2- data.lenght ok: ',data.length, 'e ultima hora ok: ', ultimahora, 'xpdb: ',xpdb)
 
 
 
@@ -46,7 +48,7 @@ setInterval( async ()=>{
         
        
         db.query(
-            `INSERT INTO ${tbnome} (chatid,conversa) VALUES (?,?)`, [chave, conversaJSON],
+            `INSERT INTO ${tbnome} (chatid,conversa,xp) VALUES (?,?,?)`, [chave, conversaJSON, xpdb],
             (err, result)=>{
                 if (err) {
                     console.log("Erro save bd", err)
@@ -93,7 +95,7 @@ app.use(cors({
 
 
 app.post('/chat', async (req, res) => {
-    const { mensagem, id } = req.body
+    const { mensagem, id, xp } = req.body
     if (typeof mensagem !== "string" || !mensagem.trim())
          return res.status(400).json({ "msg": "Nenhuma mensagem enviada" })
     if(typeof id !=="string" || !id.trim()) return res.status(400).json({ "msg": "Nenhum ID enviado" })
@@ -142,7 +144,7 @@ app.post('/chat', async (req, res) => {
         )
         //salva no historico
         await redis.rpush(`chat:${id}`, JSON.stringify({role: "user" ,content: mensagem,
-        hora: Date.now()
+        hora: Date.now(), xp: xp
          }))
 
         await redis.expire(`chat:${id}`, 60* 30)
@@ -174,7 +176,7 @@ app.post('/chat', async (req, res) => {
 
 //cria tabela caso não exista
 app.get('/criatabela', (req, res) => {
-    const comando = "CREATE TABLE IF NOT EXISTS " + tbnome + " (id INT AUTO_INCREMENT PRIMARY KEY, chatid VARCHAR(50) NOT NULL, conversa JSON NOT NULL, criado TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
+    const comando = "CREATE TABLE IF NOT EXISTS " + tbnome + " (id INT AUTO_INCREMENT PRIMARY KEY, chatid VARCHAR(50) NOT NULL, xp VARCHAR(5) NOT NULL, conversa JSON NOT NULL, criado TIMESTAMP DEFAULT CURRENT_TIMESTAMP);"
 
     //query é usado para comandos SQL
     db.query(comando, (erro, resultado) => {
