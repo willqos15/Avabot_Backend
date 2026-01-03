@@ -13,64 +13,64 @@ const redis = new Redis(process.env.RURL) //localhost:6379
 const inatividade = 60000
 const intervalo = 30000
 
-setInterval( async ()=>{
+setInterval(async () => {
 
     console.log('1- setInterval executado')
 
-    try{
-    const chats = await redis.keys('chat:*')
-    .then(keys=> keys.filter(x=> !x.endsWith(':salvo')))
+    try {
+        const chats = await redis.keys('chat:*')
+            .then(keys => keys.filter(x => !x.endsWith(':salvo')))
 
-    for (const chave of chats) {
-        const data = await redis.lrange(chave, 0,-1)
-        if (!data || data.length === 0) continue
+        for (const chave of chats) {
+            const data = await redis.lrange(chave, 0, -1)
+            if (!data || data.length === 0) continue
 
-        const message = data.map(x=> JSON.parse(x))
-        const ultimahora = message[message.length -1]?.hora
-        if(!ultimahora) continue
+            const message = data.map(x => JSON.parse(x))
+            const ultimahora = message[message.length - 1]?.hora
+            if (!ultimahora) continue
 
-        const ultimamsguser = [...message].reverse().find(m=> m.role ==='user')
-        const xpdb = ultimamsguser?.xp
+            const ultimamsguser = [...message].reverse().find(m => m.role === 'user')
+            const xpdb = ultimamsguser?.xp
 
-       console.log('2- data.lenght ok: ',data.length, 'e ultima hora ok: ', ultimahora, 'xpdb: ',xpdb)
+            console.log('2- data.lenght ok: ', data.length, 'e ultima hora ok: ', ultimahora, 'xpdb: ', xpdb)
 
 
 
-        const jaSalvo = await redis.get(`${chave}:salvo`)
-        console.log('3- buscando ja salvo:', jaSalvo)
+            const jaSalvo = await redis.get(`${chave}:salvo`)
+            console.log('3- buscando ja salvo:', jaSalvo)
 
-        if (Date.now() - ultimahora > inatividade && !jaSalvo){
+            if (Date.now() - ultimahora > inatividade && !jaSalvo) {
 
-        console.log('4- conversa nao salva:', jaSalvo)
+                console.log('4- conversa nao salva:', jaSalvo)
 
-        
 
-        const conversaJSON = JSON.stringify(message)
-        
-       
-        db.query(
-            `INSERT INTO ${tbnome} (chatid,conversa,xp) VALUES (?,?,?)`, [chave, conversaJSON, xpdb],
-            (err, result)=>{
-                if (err) {
-                    console.log("Erro save bd", err)
-                    return
-                }
-                console.log('Bd saved', result)
+
+                const conversaJSON = JSON.stringify(message)
+
+
+                db.query(
+                    `INSERT INTO ${tbnome} (chatid,conversa,xp) VALUES (?,?,?)`, [chave, conversaJSON, xpdb],
+                    (err, result) => {
+                        if (err) {
+                            console.log("Erro save bd", err)
+                            return
+                        }
+                        console.log('Bd saved', result)
+                    }
+                )
+
+                await redis.set(`${chave}:salvo`, 'ok')
+                console.log('5 OK- salvo mensagem bd -------')
+
+                await redis.del(chave)
+                await redis.del(chave, `${chave}:salvo`)
+
+
             }
-        )
 
-        await redis.set(`${chave}:salvo`, 'ok')
-        console.log('5 OK- salvo mensagem bd -------')
 
-        await redis.del(chave)
-        await redis.del(chave, `${chave}:salvo`)
-        
-    
-    }
-
-        
-    }
-    } catch(err){
+        }
+    } catch (err) {
         console.error("erro no timer de inatividade", err)
 
     }
@@ -98,20 +98,20 @@ app.use(cors({
 app.post('/chat', async (req, res) => {
     const { mensagem, id, xp } = req.body
     if (typeof mensagem !== "string" || !mensagem.trim())
-         return res.status(400).json({ "msg": "Nenhuma mensagem enviada" })
-    if(typeof id !=="string" || !id.trim()) return res.status(400).json({ "msg": "Nenhum ID enviado" })
+        return res.status(400).json({ "msg": "Nenhuma mensagem enviada" })
+    if (typeof id !== "string" || !id.trim()) return res.status(400).json({ "msg": "Nenhum ID enviado" })
 
 
     try {
         //lrange(chave, inicio, fim) o -1 significa ultimo item da lista
         const leitura = await redis.lrange(`chat:${id}`, -10, -1)
-        const mapleitura = leitura.map(x=> JSON.parse(x))
-        
-        const history = mapleitura.filter(x=> x.role && x.content).map(x=> ({
+        const mapleitura = leitura.map(x => JSON.parse(x))
+
+        const history = mapleitura.filter(x => x.role && x.content).map(x => ({
             role: x.role, content: x.content
         }))
 
-   
+
 
         const resposta = await axios.post('https://api.groq.com/openai/v1/chat/completions',
             {
@@ -123,7 +123,10 @@ app.post('/chat', async (req, res) => {
 
                     {
                         role: "system",
-                        content: "Você é uma atendende de clinica Mais Saúde, seu nome é Ana, você é gentil e age de maneira natural usando apenas 1 emoji por mensagem, podendo. você atende com felicidade e respeito e amor, ternura, você é feito exclusivamente para assuntos da clinica, caso o assunto mude diga educamanete que não pode ajudar. aja sem parece IA, mande mensagens diretas e curtas de preferencia. com linguagem acessivel, informal mal respeitosa. e você vai fazer a avaliação de como foi a experiência na clinica, pergunte o nome da pessoa, se ela tem uma sugestão ou critica, para ela avaliar, e ao final na mensagem faça um resumo em json nesse modelo {tipo: sugestao, mensagem: 'melhor ambiente'} para ser exibido no final de toda mensagem"
+                        content: {
+                            "content": "Você é Ana, assistente virtual de chat da clínica Pet Feliz, especializada em coletar feedback de clientes de forma profissional, cordial e eficiente. Fique ciente que o cliente já entrou na conversa com intuíto de dar um feedback, Seu objetivo é conduzir a conversa de maneira estruturada e gentil, garantindo que todas as informações relevantes sobre o atendimento sejam registradas. Você deve sempre:\n1. Perguntar o nome do cliente e usar o nome durante a conversa.\n2. Avaliar a experiência com os atendentes: simpatia, atenção e cordialidade.\n3. Avaliar como o cliente percebeu o cuidado e bem-estar do seu pet durante o atendimento.\n4. Agradecer por compartilhar a experiência, reforçando que ele ajuda a melhorar o serviço, e se despedir de forma cordial e calorosa.\nRegras importantes:\n- Seja sempre gentil, cordial e profissional e evite ser verborrágico demais.\n- Não ofereça informações ou respostas fora do contexto de coleta de feedback.\n- Faça uma pergunta por vez, aguardando a resposta do cliente antes de seguir para a próxima.\n- Use um tom acolhedor, amigável e positivo, transmitindo confiança e atenção.\n- Ao final, finalize a conversa com um agradecimento personalizado usando o nome do cliente.\n\nExemplo de fluxo inicial que deve seguir:\n1. 'Entendi! Antes de começarmos, posso saber seu nome, por favor?''\n2. 'Ótimo! E como você acha que seu pet foi tratado durante o atendimento?'\n3. 'Muito obrigada por compartilhar sua experiência! Ela nos ajuda a cuidar cada vez melhor dos nossos amigos de quatro patas 🐾. Tenha um ótimo dia!'\nSempre mantenha consistência, clareza e profissionalismo, guiando o cliente até o final do feedback."
+                        }
+
                     },
                     ...history,
                     {
@@ -131,14 +134,15 @@ app.post('/chat', async (req, res) => {
                         content: mensagem
                     }
 
-                ]},
-                {   
+                ]
+            },
+            {
                 headers: {
                     "Authorization": `Bearer ${process.env.GKEY}`,
                     "Content-Type": "application/json"
                 }
-                }
-            
+            }
+
 
 
 
@@ -146,25 +150,26 @@ app.post('/chat', async (req, res) => {
         console.log("TEXTE XP Mensagem a salvar no Redis:", { mensagem, xp });
 
         //salva no historico
-        await redis.rpush(`chat:${id}`, JSON.stringify({role: "user" ,content: mensagem,
-        hora: Date.now(), xp: xp
-         }))
+        await redis.rpush(`chat:${id}`, JSON.stringify({
+            role: "user", content: mensagem,
+            hora: Date.now(), xp: xp
+        }))
 
-        await redis.expire(`chat:${id}`, 60* 30)
-        await redis.expire(`chat:${id}`, 60* 30)
+        await redis.expire(`chat:${id}`, 60 * 30)
+        await redis.expire(`chat:${id}`, 60 * 30)
         await redis.del(`chat:${id}:salvo`)
-        await redis.ltrim(`chat:${id}`, -50,-1)
+        await redis.ltrim(`chat:${id}`, -50, -1)
 
         const botmensagem = resposta.data.choices[0].message.content
-        await redis.rpush(`chat:${id}`, JSON.stringify({role: "assistant" ,content: botmensagem, hora: Date.now() }))
+        await redis.rpush(`chat:${id}`, JSON.stringify({ role: "assistant", content: botmensagem, hora: Date.now() }))
 
-        await redis.expire(`chat:${id}`, 60* 30)
-        await redis.expire(`chat:${id}:salvo`, 60* 30)
-        await redis.ltrim(`chat:${id}`, -50,-1)
-        
+        await redis.expire(`chat:${id}`, 60 * 30)
+        await redis.expire(`chat:${id}:salvo`, 60 * 30)
+        await redis.ltrim(`chat:${id}`, -50, -1)
 
-        return res.json({resposta: botmensagem})
-        
+
+        return res.json({ resposta: botmensagem })
+
     }
 
     catch (err) {
@@ -196,20 +201,20 @@ app.post('/cadastrar', (req, res) => {
     const comando = 'INSERT INTO ' + tbnome + ' (nome, contato, tipo, descricao) VALUES (?,?,?,?)'
 
     if (!descricao || descricao.trim() === "") {
-            return res.status(400).json({ "msg": "Descrição obrigatória" })
-        }
-        if (!tipo || tipo.trim() === "") {
-            return res.status(400).json({ "msg": "Tipo obrigatório" })
-        }
+        return res.status(400).json({ "msg": "Descrição obrigatória" })
+    }
+    if (!tipo || tipo.trim() === "") {
+        return res.status(400).json({ "msg": "Tipo obrigatório" })
+    }
 
     db.query(comando, [nome, contato, tipo, descricao], (erro, resultado) => {
 
         if (erro) {
-            
+
             return res.status(500).send(erro)
         }
 
-        
+
         res.send({ id: resultado.insertId, nome, contato, tipo, descricao })
     })
 })
