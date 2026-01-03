@@ -15,6 +15,8 @@ const intervalo = 30000
 
 setInterval( async ()=>{
 
+    console.log('1- setInterval executado')
+
     try{
     const chats = await redis.keys('chat:*')
     .then(keys=> keys.filter(x=> !x.endsWith(':salvo')))
@@ -27,15 +29,16 @@ setInterval( async ()=>{
         const ultimahora = message[message.length -1]?.hora
         if(!ultimahora) continue
 
+       console.log('2- data.lenght ok: ',data.length, 'e ultima hora ok: ', ultimahora)
+
 
 
         const jaSalvo = await redis.get(`${chave}:salvo`)
-
-        
-
-        
+        console.log('3- buscando ja salvo:', jaSalvo)
 
         if (Date.now() - ultimahora > inatividade && !jaSalvo){
+
+        console.log('4- conversa nao salva:', jaSalvo)
 
         
 
@@ -47,6 +50,7 @@ setInterval( async ()=>{
         // )
 
         await redis.set(`${chave}:salvo`, 'ok')
+        console.log('5 OK- salvo mensagem bd -------')
         
     
     }
@@ -141,7 +145,7 @@ app.post('/chat', async (req, res) => {
 
         await redis.expire(`chat:${id}`, 60* 30)
         await redis.expire(`chat:${id}:salvo`, 60* 30)
-         await redis.ltrim(`chat:${id}`, -50,-1)
+        await redis.ltrim(`chat:${id}`, -50,-1)
         
 
         return res.json({resposta: botmensagem})
