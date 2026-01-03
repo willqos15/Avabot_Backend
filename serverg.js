@@ -29,7 +29,8 @@ setInterval( async ()=>{
         const ultimahora = message[message.length -1]?.hora
         if(!ultimahora) continue
 
-        const xpdb = message[message.length -1]?.xp
+        const ultimamsguser = [...message].reverse().find(m=> m.role ==='user')
+        const xpdb = ultimamsguser?.xp
 
        console.log('2- data.lenght ok: ',data.length, 'e ultima hora ok: ', ultimahora, 'xpdb: ',xpdb)
 
