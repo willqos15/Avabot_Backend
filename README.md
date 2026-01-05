@@ -1,15 +1,16 @@
-# Backend - PetFeliz Feedback API
+# Backend - Avabot: Pet Feliz
 
-PetFeliz Feedback API é uma aplicação Node.js que gerencia feedbacks de clientes de uma clínica fictícia chamada Pet Feliz, incluindo registro de mensagens de chat com assistente virtual, armazenamento temporário em Redis e persistência em banco de dados MySQL. A API também oferece endpoints para cadastro, consulta e exclusão de registros, automatizando o salvamento de conversas e mantendo histórico de interações.
+PetFeliz Feedback API é uma aplicação **Node.js e Express com LLM Groq** que gerencia feedbacks de clientes de uma clínica fictícia chamada Pet Feliz, incluindo registro de mensagens de chat com assistente virtual, armazenamento temporário em **Redis e persistência em banco de dados MySQL**. A API também oferece endpoints para cadastro, consulta e exclusão de registros, automatizando o salvamento de conversas e mantendo histórico de interações.
 
 ---
 
 ### Frontend
-Este repositório contém apenas o backend da aplicação.
+
+**Este repositório contém apenas o backend da aplicação.**
 
 O código do frontend em React está disponível em um repositório separado no GitHub:
 
-Frontend – PetFeliz Feedback API
+**Frontend – Avabot: Pet Feliz**
 (https://github.com/willqos15/Avabot_Frontend)
 
 ---
@@ -43,8 +44,8 @@ Frontend – PetFeliz Feedback API
 O arquivo `.env` deve conter:
 
 ```
-PORT=PORTA_DESEJADA
-RURL=LINK_DO_REDIS
+PORT=PORTA_DO_SERVIDOR
+RURL=URL_DO_REDIS
 GKEY=SUA_CHAVE_API_ASSISTENTE
 ```
 
@@ -52,18 +53,17 @@ GKEY=SUA_CHAVE_API_ASSISTENTE
 
 ## Endpoints
 
-### Chat
 
 - `POST /chat`  
   Recebe do Frontend a mensagem do usuário, id, xp e retorna resposta da assistente virtual.  
   Corpo da requisição:  
-  ```json
- {
+```
+{
   "id": "12345",
   "xp": "boa",
   "mensagem": "Amei a Clínica"
   }
-  ```
+```
 
 
 - `GET /criatabela`
@@ -74,11 +74,19 @@ Cria a tabela registros no MySQL caso não exista.
 Insere novo feedback no banco. Campos obrigatórios: chatid, xp e conversa.
 Exemplo de corpo da requisição:
 
-```{
-  "chatid": "1",
+```
+{
+  "chatid": "12345",
   "xp": "boa",
-  "conversa": "Atendimento ruim, demorou 2 horas"
-}
+  "conversa": [
+    
+  {"xp": "boa", "hora": 1767586399579, "role": "user",
+  "content": "Mensagem enviada pelo usuário."},
+
+  {"hora": 1767586399582, "role": "assistant",
+  "content": "Resposta enviada pelo Bot."}
+
+]}
 ```
 
 
@@ -99,6 +107,8 @@ A cada 30 segundos, o servidor verifica todas as conversas armazenadas em Redis.
 
 - Limpa o histórico do Redis.
 
+---
+
 ### Execução
 
 1- Instale dependências:
@@ -111,8 +121,7 @@ npm install express cors ioredis dotenv axios mysql2
 3- Verifique se Redis e MySQL estão funcionando
 
 4- Inicie o servidor:
-```node serverg.js
-```
+`node serverg.js`
 
 ---
 
