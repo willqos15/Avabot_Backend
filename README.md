@@ -63,8 +63,6 @@ GKEY=SUA_CHAVE_API_ASSISTENTE
   "xp": "boa",
   "mensagem": "Amei a Clínica"
   }
-
-
   ```
 
 

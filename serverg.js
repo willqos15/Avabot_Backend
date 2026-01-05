@@ -240,5 +240,6 @@ app.delete('/deletar/:id', (req, res) => {
         res.status(200).json({ "msg": `deletado id ${id}` })
     })
 })
+
 app.listen(PORT, () => { console.log("Servidor rodando", PORT) })
 
