@@ -80,13 +80,7 @@ setInterval(async () => {
 
 
 
-// EXEMPLO DE OBJETO
-// {
-//   "nome": "João",
-//   "contato": "55 93 9 4002-8922",
-//   "tipo": "reclamacao"
-//   "descricao": "Atendimento ruim, demorou 2 horas e o local não tinha café"
-// }
+
 
 app.use(cors({
     origin: ['http://localhost:5173',
@@ -125,7 +119,7 @@ app.post('/chat', async (req, res) => {
                     {
                         role: "system",
                         content: 
-                            "Você é Ana, assistente virtual que tem a função de receber feedback dos clientes da clínica Pet Feliz, O cliente virá a você com uma sugestão ou reclamação, a qual você deve atender de maneira gentil, com linguagem acessível e cordial. Uso no máximo 15 palavras. Ao final agradeça, a cada 3 mensagens suas você pode usar um emoji. Ao finalizar a conversa agradeça e diga que vai comunicar o gerente em caso de problema. Regras: 1 - A sua primeira mensagem deve ser OBRIGATÓRIAMENTE perguntando o nome do cliente, antes de todos procedimentos, diga 'certo, vou anotar seu relato. Pode me passar seu nome?' 2- Caso o cliente se negue a informar o nome, não insista, prossiga com atendimento. 3 - Não responda a perguntas de outros temas que não sejam relacionadas ao feedback da clinica. 4- No máximo uma pergunta por mensagem. 4- Seja sempre gentil."
+                            "Você é Ana, assistente virtual que tem a função de receber feedback dos clientes da clínica Pet Feliz, O cliente virá a você com uma sugestão ou reclamação, a qual você deve atender de maneira gentil, com linguagem acessível e cordial. Uso no máximo 12 palavras por mensagem. Ao final agradeça, a cada 3 mensagens suas você pode usar um emoji. Ao finalizar a conversa agradeça e diga que vai comunicar o gerente em caso de problema. Regra 1- OBRIGATÓRIAMENTE use no máximo 12 palavras por mensagem. Regra 2 - A sua primeira mensagem deve ser OBRIGATÓRIAMENTE perguntando o nome do cliente, antes de todos procedimentos e perguntas. Regra 3- Caso o cliente se negue a informar o nome, não insista, prossiga com atendimento. Regra 4 - Não responda a perguntas de outros temas que não sejam relacionadas ao feedback da clinica. Regra 5- No máximo uma pergunta por mensagem. Regra 6- Seja sempre gentil. Regra 7 - Sua função é somente feedback, você não faz agendamentos nem nada mais."
                         
 
                     },
@@ -197,18 +191,22 @@ app.get('/criatabela', (req, res) => {
 
 //cadastra itens
 app.post('/cadastrar', (req, res) => {
-    const { nome, contato, tipo, descricao } = req.body
+    const { chatid, conversa, xp} = req.body
     //o interrogação são placeholders de segurança
-    const comando = 'INSERT INTO ' + tbnome + ' (nome, contato, tipo, descricao) VALUES (?,?,?,?)'
+    const comando = 'INSERT INTO ' + tbnome + ' (chatid, conversa, xp) VALUES (?,?,?)'
 
-    if (!descricao || descricao.trim() === "") {
-        return res.status(400).json({ "msg": "Descrição obrigatória" })
+    if (!conversa || Object.keys(conversa).length === 0) {
+        return res.status(400).json({ "msg": "conversa obrigatória" })
     }
-    if (!tipo || tipo.trim() === "") {
-        return res.status(400).json({ "msg": "Tipo obrigatório" })
+    if (!xp || xp.trim() === "") {
+        return res.status(400).json({ "msg": "xp obrigatório" })
+    }
+     if (!chatid || chatid.trim() === "") {
+        return res.status(400).json({ "msg": "chatid obrigatório" })
     }
 
-    db.query(comando, [nome, contato, tipo, descricao], (erro, resultado) => {
+
+    db.query(comando, [chatid, conversa, xp], (erro, resultado) => {
 
         if (erro) {
 
@@ -216,7 +214,7 @@ app.post('/cadastrar', (req, res) => {
         }
 
 
-        res.send({ id: resultado.insertId, nome, contato, tipo, descricao })
+        res.send({ id: resultado.insertId, chatid, xp, conversa})
     })
 })
 
@@ -229,13 +227,7 @@ app.get('/busca', (req, res) => {
     })
 })
 
-//busca por todos os nomes
-app.get('/tipo', (req, res) => {
-    db.query('SELECT tipo FROM ' + tbnome, (err, result) => {
-        if (err) return res.status(500).json({ "erro": err })
-        res.status(200).json({ "msg": result })
-    })
-})
+
 
 
 //deletar
@@ -250,14 +242,3 @@ app.delete('/deletar/:id', (req, res) => {
 })
 app.listen(PORT, () => { console.log("Servidor rodando", PORT) })
 
-//atualizar
-app.put('/atualizar/:id', (req, res) => {
-    const { id } = req.params
-    const { nome, contato, tipo, descricao } = req.body
-    const comando = 'UPDATE ' + tbnome + ' SET nome= ?, contato = ?, tipo=?, descricao=? WHERE id = ?'
-    db.query(comando, [nome, contato, tipo, descricao, id], (err, result) => {
-        if (err) return res.status(500).send(err)
-        if (result.affectedRows === 0) return res.status(404).json({ "msg": "não encontrado" })
-        res.status(200).json({ "msg": `atualizado id ${id}` })
-    })
-})
